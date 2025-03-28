@@ -4,13 +4,13 @@ const path = require("path");
 const methodOverride = require("method-override");
 const mongoose = require("mongoose");
 const ejsMate = require("ejs-mate");
-const { campgroundSchema } = require("./schemas.js");
+const { campgroundSchema, reviewSchema } = require("./schemas.js");
 
 const ExpressError = require("./utils/expressError");
 const wrapAsync = require("./utils/wrapAsync");
-
-mongoose.connect("mongodb://localhost:27017/yelpCampDb");
 const Campground = require("./models/campground");
+const Review = require("./models/review.js");
+mongoose.connect("mongodb://localhost:27017/yelpCampDb");
 
 const db = mongoose.connection;
 db.on("error", console.error.bind(console, "connection error"));
@@ -26,6 +26,16 @@ app.use(methodOverride("_method"));
 
 const validateCampground = (req, res, next) => {
   const { error } = campgroundSchema.validate(req.body);
+  if (error) {
+    const msg = error.details.map((el) => el.message).join(",");
+    throw new ExpressError(msg, 400);
+  } else {
+    next();
+  }
+};
+
+const validateReview = (req, res, next) => {
+  const { error } = reviewSchema.validate(req.body);
   if (error) {
     const msg = error.details.map((el) => el.message).join(",");
     throw new ExpressError(msg, 400);
@@ -65,7 +75,9 @@ app.post(
 app.get(
   "/campgrounds/:id",
   wrapAsync(async (req, res, next) => {
-    const campground = await Campground.findById(req.params.id);
+    const campground = await Campground.findById(req.params.id).populate(
+      "reviews"
+    );
     res.render("campgrounds/show", { campground });
   })
 );
@@ -99,6 +111,19 @@ app.delete(
   })
 );
 
+app.post(
+  "/campgrounds/:id/reviews",
+  validateReview,
+  wrapAsync(async (req, res, next) => {
+    const campground = await Campground.findById(req.params.id);
+    const review = new Review(req.body.review);
+    campground.reviews.push(review);
+    await review.save();
+    await campground.save();
+    res.redirect(`/campgrounds/${campground._id}`);
+  })
+);
+
 app.all("*", (req, res, next) => {
   next(new ExpressError("Page Not Found", 404));
 });
@@ -112,6 +137,3 @@ app.use((err, req, res, next) => {
 app.listen(3000, () => {
   console.log("Server is running on port 3000");
 });
-
-// app.all('*', (req, res, next) => {
-// app.all(/(.*)/, (req, res, next) => {
