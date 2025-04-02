@@ -7,8 +7,12 @@ const ejsMate = require("ejs-mate");
 const ExpressError = require("./utils/expressError");
 const session = require("express-session");
 const flash = require("connect-flash");
+const passport = require("passport");
+const LocalStrategy = require("passport-local");
+
 const campgrounds = require("./routes/campgrounds.js");
 const reviews = require("./routes/reviews.js");
+const User = require("./models/user");
 
 mongoose.connect("mongodb://localhost:27017/yelpCampDb");
 const db = mongoose.connection;
@@ -37,10 +41,23 @@ const sessionConfig = {
 app.use(session(sessionConfig));
 app.use(flash());
 
+app.use(passport.initialize());
+app.use(passport.session());
+passport.use(new LocalStrategy(User.authenticate()));
+
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser());
+
 app.use((req, res, next) => {
   res.locals.success = req.flash("success");
   res.locals.error = req.flash("error");
   next();
+});
+
+app.get("/fakeUser", async (req, res) => {
+  const user = new User({ email: "cristi@gmail.com", username: "Cristi" });
+  const newUser = await User.register(user, "chicken");
+  res.send(newUser);
 });
 
 app.use("/campgrounds", campgrounds);
