@@ -62,8 +62,8 @@ CampgroundSchema.post("findOneAndDelete", async function (doc) {
       },
     });
   }
-  if (CampgroundSchema.images) {
-    for (const img of CampgroundSchema.images) {
+  if (doc.images) {
+    for (const img of doc.images) {
       await cloudinary.uploader.destroy(img.filename);
     }
   }
