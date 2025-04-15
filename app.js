@@ -20,6 +20,7 @@ const campgroundsRoutes = require("./routes/campgrounds.js");
 const reviewsRoutes = require("./routes/reviews.js");
 const userRoutes = require("./routes/users.js");
 const MongoStore = require("connect-mongo");
+const morgan = require("morgan");
 
 const dbUrl = process.env.DB_URL || "mongodb://localhost:27017/yelpCampDb";
 const secret = process.env.SECRET || "thisshouldbeabettersecret!";
@@ -51,7 +52,7 @@ app.use(methodOverride("_method"));
 app.use(express.static(path.join(__dirname, "public")));
 app.use(mongoSanitize());
 app.use(flash());
-
+app.use(morgan("combined"));
 const sessionConfig = {
   store,
   name: "session",
