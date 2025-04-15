@@ -13,7 +13,8 @@ const session = require("express-session");
 const flash = require("connect-flash");
 const passport = require("passport");
 const LocalStrategy = require("passport-local");
-
+const mongoSanitize = require("express-mongo-sanitize");
+const helmet = require("helmet");
 const User = require("./models/user");
 
 const campgroundsRoutes = require("./routes/campgrounds.js");
@@ -33,12 +34,16 @@ app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 app.use(methodOverride("_method"));
 app.use(express.static(path.join(__dirname, "public")));
+app.use(mongoSanitize());
+app.use(helmet({ crossOriginEmbedderPolicy: true }));
 const sessionConfig = {
+  name: "session",
   secret: "thisshlouldbeabettersecret!",
   resave: false,
   saveUninitialized: true,
   cookie: {
     httpOnly: true,
+    // secure:true,
     expires: Date.now() + 1000 * 60 * 60 * 24 * 7,
     maxAge: 1000 * 60 * 60 * 24 * 7,
   },
